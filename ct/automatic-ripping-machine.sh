@@ -6,7 +6,7 @@ source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/m
 # Source: https://github.com/automatic-ripping-machine/automatic-ripping-machine
 
 # App Default Values
-APP="Automatic Ripping Machine"
+APP="Automatic-Ripping-Machine"
 var_tags="media"
 var_cpu="2"
 var_ram="2048"
