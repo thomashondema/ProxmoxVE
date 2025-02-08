@@ -30,13 +30,18 @@ $STD apt-get install -y udev
 msg_ok "Installed Dependencies"
 
 msg_info "Installing Automatic Ripping Machine"
+RELEASE=$(curl -s https://api.github.com/repos/automatic-ripping-machine/automatic-ripping-machine/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
 cd /opt
-$STD git clone https://github.com/automatic-ripping-machine/automatic-ripping-machine.git arm
+wget -q "https://github.com/automatic-ripping-machine/automatic-ripping-machine/archive/refs/tags/v${RELEASE}.tar.gz"
+tar xzf "v${RELEASE}.tar.gz"
+mv "automatic-ripping-machine-${RELEASE}" arm
 cd arm
 python3 -m venv venv
 source venv/bin/activate
 $STD pip install -r requirements.txt
+mkdir -p /opt/arm/config
 cp /opt/arm/setup/arm.yaml.sample /opt/arm/config/arm.yaml
+echo "${RELEASE}" >/opt/${APPLICATION}_version.txt
 msg_ok "Installed Automatic Ripping Machine"
 
 msg_info "Creating Service"
@@ -84,4 +89,5 @@ customize
 msg_info "Cleaning up"
 $STD apt-get -y autoremove
 $STD apt-get -y autoclean
+rm -rf "/opt/v${RELEASE}.tar.gz"
 msg_ok "Cleaned"
