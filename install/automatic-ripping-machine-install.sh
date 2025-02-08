@@ -14,21 +14,22 @@ network_check
 update_os
 
 msg_info "Installing Dependencies"
-$STD apt-get install -y curl
-$STD apt-get install -y sudo
-$STD apt-get install -y mc
-$STD apt-get install -y git
-$STD apt-get install -y python3-pip
-$STD apt-get install -y python3-venv
-$STD apt-get install -y ffmpeg
-$STD apt-get install -y libdvdcss2
-$STD apt-get install -y handbrake-cli
-$STD apt-get install -y makemkv-bin
-$STD apt-get install -y libavcodec-extra
-$STD apt-get install -y abcde
-$STD apt-get install -y flac
-$STD apt-get install -y imagemagick
-$STD apt-get install -y udev
+$STD apt-get install -y \
+    curl \
+	sudo \ 
+	mc \ 
+	git \ 
+	python3-pip \ 
+	python3-venv \ 
+	ffmpeg \ 
+	libdvdcss2 \ 
+	handbrake-cli \ 
+	makemkv-bin \ 
+	libavcodec-extra \ 
+	abcde \ 
+	flac \ 
+	imagemagick \ 
+	udev
 msg_ok "Installed Dependencies"
 
 msg_info "Installing Automatic Ripping Machine"
