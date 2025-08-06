@@ -31,7 +31,7 @@ apt update && apt upgrade -y
 #chmod +x DebianInstaller.sh
 #./DebianInstaller.sh
 
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh)"
+#bash -c "$(curl -fsSL https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh)"
 
 msg_ok "Installed Automatic Ripping Machine"
 
