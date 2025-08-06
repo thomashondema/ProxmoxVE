@@ -23,28 +23,8 @@ msg_info "Installing Automatic Ripping Machine"
 #mv "automatic-ripping-machine-${RELEASE}" arm
 
 
-# Path to sources.list
-sources_file="/etc/apt/sources.list"
-
-cp "$sources_file" "${sources_file}.bak"
-
-update_line() {
-    local line="$1"
-    if [[ "$line" == deb* && "$line" == *"main"* && "$line" != *"contrib"* ]]; then
-        echo "${line} contrib"
-    else
-        echo "$line"
-    fi
-}
-
-awk -v OFS='\n' '{
-    if ($1 == "deb" && $0 ~ /main/ && $0 !~ /contrib/) {
-        print $0 " contrib"
-    } else {
-        print $0
-    }
-}' "$sources_file" | sudo tee "$sources_file" > /dev/null
-
+apt install software-properties-common -y
+apt-add-repository contrib non-free-firmware
 apt update && apt upgrade -y
 
 #wget https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh
