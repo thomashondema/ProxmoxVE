@@ -24,7 +24,7 @@ msg_info "Installing Automatic Ripping Machine"
 
 
 apt install software-properties-common -y
-apt-add-repository contrib non-free-firmware
+apt-add-repository contrib
 apt update && apt upgrade -y
 
 #wget https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh
