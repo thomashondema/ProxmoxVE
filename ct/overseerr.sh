@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2025 tteck
 # Author: tteck (tteckster)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://overseerr.dev/
 
-# App Default Values
 APP="Overseerr"
-var_tags="media"
-var_cpu="2"
-var_ram="2048"
-var_disk="8"
-var_os="debian"
-var_version="12"
-var_unprivileged="1"
+var_tags="${var_tags:-media}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-2048}"
+var_disk="${var_disk:-8}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-1}"
 
-# App Output & Base Settings
 header_info "$APP"
-base_settings
-
-# Core
 variables
 color
 catch_errors
@@ -32,20 +27,35 @@ function update_script() {
     msg_error "No ${APP} Installation Found!"
     exit
   fi
-  msg_info "Updating $APP"
-  systemctl stop overseerr
-  cd /opt/overseerr
-  output=$(git pull)
-  git pull &>/dev/null
-  if echo "$output" | grep -q "Already up to date."; then
-    msg_ok " $APP is already up to date."
+  
+  RELEASE=$(curl -fsSL https://api.github.com/repos/sct/overseerr/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
+  if [[ ! -f ~/.overseerr ]] || [[ "${RELEASE}" != "$(cat ~/.overseerr)" ]]; then
+    msg_info "Stopping ${APP} service"
+    systemctl stop overseerr
+    msg_ok "Service stopped"
+
+    msg_info "Creating backup"
+    mv /opt/overseerr/config /opt/config_backup
+    msg_ok "Backup created"
+
+    fetch_and_deploy_gh_release "overseerr" "sct/overseerr" "tarball"
+    rm -rf /opt/overseerr/config
+
+    msg_info "Configuring ${APP} (Patience)"
+    cd /opt/overseerr
+    $STD yarn install
+    $STD yarn build
+    mv /opt/config_backup /opt/overseerr/config
+    msg_ok "Configured ${APP}"
+
+    msg_info "Starting ${APP} service"
     systemctl start overseerr
-    exit
+    msg_ok "Started ${APP} service"
+
+    msg_ok "Updated successfully!"
+  else
+    msg_ok "No update required. ${APP} is already at ${RELEASE}"
   fi
-  yarn install &>/dev/null
-  yarn build &>/dev/null
-  systemctl start overseerr
-  msg_ok "Updated $APP"
   exit
 }
 

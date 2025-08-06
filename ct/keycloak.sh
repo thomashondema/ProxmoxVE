@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2025 tteck
-# Author: tteck (tteckster)
+# Author: tteck (tteckster) | Co-Author: remz1337
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://www.keycloak.org/
 
-# App Default Values
 APP="Keycloak"
-var_tags="access-management"
-var_cpu="2"
-var_ram="2048"
-var_disk="4"
-var_os="debian"
-var_version="12"
-var_unprivileged="1"
+var_tags="${var_tags:-access-management}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-2048}"
+var_disk="${var_disk:-4}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-1}"
 
-# App Output & Base Settings
 header_info "$APP"
-base_settings
-
-# Core
 variables
 color
 catch_errors
@@ -28,34 +23,39 @@ function update_script() {
   header_info
   check_container_storage
   check_container_resources
-  if [[ ! -f /etc/systemd/system/keycloak.service ]]; then
+  if [[ ! -d /opt/keycloak ]]; then
     msg_error "No ${APP} Installation Found!"
     exit
   fi
-  msg_info "Updating ${APP} LXC"
+
+  msg_info "Stopping Keycloak"
+  systemctl stop keycloak
+  msg_ok "Stopped Keycloak"
 
   msg_info "Updating packages"
-  apt-get update &>/dev/null
-  apt-get -y upgrade &>/dev/null
+  $STD apt-get update
+  $STD apt-get -y upgrade
+  msg_ok "Updated packages"
 
-  RELEASE=$(curl -s https://api.github.com/repos/keycloak/keycloak/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
-  msg_info "Updating Keycloak to v$RELEASE"
+  msg_info "Backup old Keycloak"
   cd /opt
-  wget -q https://github.com/keycloak/keycloak/releases/download/$RELEASE/keycloak-$RELEASE.tar.gz
   mv keycloak keycloak.old
-  tar -xzf keycloak-$RELEASE.tar.gz
-  cp -r keycloak.old/conf keycloak-$RELEASE
-  cp -r keycloak.old/providers keycloak-$RELEASE
-  cp -r keycloak.old/themes keycloak-$RELEASE
-  mv keycloak-$RELEASE keycloak
+  tar -czf keycloak_conf_backup.tar.gz keycloak.old/conf
+  msg_ok "Backup done"
 
-  msg_info "Delete temporary installation files"
-  rm keycloak-$RELEASE.tar.gz
+  fetch_and_deploy_gh_release "keycloak" "keycloak/keycloak" "prebuild" "latest" "/opt/keycloak" "keycloak-*.tar.gz"
+
+  msg_info "Updating ${APP}"
+  cd /opt
+  mv keycloak_conf_backup.tar.gz keycloak/conf
+  cp -r keycloak.old/providers keycloak
+  cp -r keycloak.old/themes keycloak
   rm -rf keycloak.old
+  msg_ok "Updated ${APP} LXC"
 
-  msg_info "Restating Keycloak"
+  msg_info "Restarting Keycloak"
   systemctl restart keycloak
-  msg_ok "Updated Successfully"
+  msg_ok "Restarted Keycloak"
   exit
 }
 

@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2025 tteck
 # Author: tteck | Co-Author: MickLesk (Canbiz)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://homebox.software/en/
 
-# App Default Values
 APP="HomeBox"
-var_tags="inventory;household"
-var_cpu="1"
-var_ram="1024"
-var_disk="4"
-var_os="debian"
-var_version="12"
-var_unprivileged="1"
+var_tags="${var_tags:-inventory;household}"
+var_cpu="${var_cpu:-1}"
+var_ram="${var_ram:-1024}"
+var_disk="${var_disk:-4}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-1}"
 
-# App Output & Base Settings
 header_info "$APP"
-base_settings
-
-# Core
 variables
 color
 catch_errors
@@ -27,26 +22,24 @@ function update_script() {
   header_info
   check_container_storage
   check_container_resources
-  if [[ ! -f /opt/homebox ]]; then
+  if [[ ! -d /opt/homebox ]]; then
     msg_error "No ${APP} Installation Found!"
     exit
   fi
-  RELEASE=$(curl -s https://api.github.com/repos/sysadminsmedia/homebox/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
-  if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
+  if [[ -x /opt/homebox ]]; then
+    sed -i 's|/opt\b|/opt/homebox|g' /etc/systemd/system/homebox.service
+    sed -i 's|^ExecStart=/opt/homebox$|ExecStart=/opt/homebox/homebox|' /etc/systemd/system/homebox.service
+  fi
+
+  RELEASE=$(curl -fsSL https://api.github.com/repos/sysadminsmedia/homebox/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
+  if [[ "${RELEASE}" != "$(cat ~/.homebox 2>/dev/null)" ]] || [[ ! -f ~/.homebox ]]; then
     msg_info "Stopping ${APP}"
     systemctl stop homebox
     msg_ok "${APP} Stopped"
 
-    msg_info "Updating ${APP} to ${RELEASE}"
-    cd /opt
-    rm -rf homebox_bak
-    rm -rf /tmp/homebox.tar.gz
-    mv homebox homebox_bak
-    wget -qO /tmp/homebox.tar.gz https://github.com/sysadminsmedia/homebox/releases/download/${RELEASE}/homebox_Linux_x86_64.tar.gz
-    tar -xzf /tmp/homebox.tar.gz -C /opt
-    chmod +x /opt/homebox
-    echo "${RELEASE}" >/opt/${APP}_version.txt
-    msg_ok "Updated Homebox"
+    fetch_and_deploy_gh_release "homebox" "sysadminsmedia/homebox" "prebuild" "latest" "/opt/homebox" "homebox_Linux_x86_64.tar.gz"
+    chmod +x /opt/homebox/homebox
+    [ -f /opt/.env ] && mv /opt/.env /opt/homebox/.env
 
     msg_info "Starting ${APP}"
     systemctl start homebox

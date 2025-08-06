@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2025 tteck
 # Author: tteck (tteckster)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://github.com/Jackett/Jackett
 
-# App Default Values
 APP="Jackett"
-var_tags="torrent"
-var_cpu="1"
-var_ram="512"
-var_disk="2"
-var_os="debian"
-var_version="12"
-var_unprivileged="1"
+var_tags="${var_tags:-torrent}"
+var_cpu="${var_cpu:-1}"
+var_ram="${var_ram:-512}"
+var_disk="${var_disk:-2}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-1}"
 
-# App Output & Base Settings
 header_info "$APP"
-base_settings
-
-# Core
 variables
 color
 catch_errors
@@ -32,17 +27,18 @@ function update_script() {
     msg_error "No ${APP} Installation Found!"
     exit
   fi
-  RELEASE=$(wget -q https://github.com/Jackett/Jackett/releases/latest -O - | grep "title>Release" | cut -d " " -f 4)
-  if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
-    msg_info "Updating ${APP}"
-    wget -q https://github.com/Jackett/Jackett/releases/download/$RELEASE/Jackett.Binaries.LinuxAMDx64.tar.gz
-    systemctl stop jackett
+
+  if [ ! -f /opt/.env ]; then
+    sed -i 's|^Environment="DisableRootWarning=true"$|EnvironmentFile="/opt/.env"|' /etc/systemd/system/jackett.service
+    cat <<EOF >/opt/.env
+DisableRootWarning=true
+EOF
+  fi
+
+  RELEASE=$(curl -s https://api.github.com/repos/Jackett/Jackett/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
+  if [[ "${RELEASE}" != "$(cat ~/.jackett 2>/dev/null)" ]] || [[ ! -f ~/.jackett ]]; then
     rm -rf /opt/Jackett
-    tar -xzf Jackett.Binaries.LinuxAMDx64.tar.gz -C /opt
-    rm -rf Jackett.Binaries.LinuxAMDx64.tar.gz
-    systemctl start jackett
-    echo "${RELEASE}" >/opt/${APP}_version.txt
-    msg_ok "Updated ${APP} to ${RELEASE}"
+    fetch_and_deploy_gh_release "jackett" "Jackett/Jackett" "prebuild" "latest" "/opt/Jackett" "Jackett.Binaries.LinuxAMDx64.tar.gz" 
   else
     msg_ok "No update required. ${APP} is already at ${RELEASE}"
   fi

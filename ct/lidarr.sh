@@ -1,42 +1,53 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2025 tteck
 # Author: tteck (tteckster)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://lidarr.audio/
 
-# App Default Values
 APP="Lidarr"
-var_tags="arr;torrent;usenet"
-var_cpu="2"
-var_ram="1024"
-var_disk="4"
-var_os="debian"
-var_version="12"
-var_unprivileged="1"
+var_tags="${var_tags:-arr;torrent;usenet}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-1024}"
+var_disk="${var_disk:-4}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-1}"
 
-# App Output & Base Settings
 header_info "$APP"
-base_settings
-
-# Core
 variables
 color
 catch_errors
 
 function update_script() {
-    header_info
-    check_container_storage
-    check_container_resources
-    if [[ ! -d /var/lib/lidarr/ ]]; then
-        msg_error "No ${APP} Installation Found!"
-        exit
-    fi
-    msg_info "Updating $APP LXC"
-    apt-get update &>/dev/null
-    apt-get -y upgrade &>/dev/null
-    msg_ok "Updated $APP LXC"
+  header_info
+  check_container_storage
+  check_container_resources
+
+  if [[ ! -d /var/lib/lidarr/ ]]; then
+    msg_error "No ${APP} Installation Found!"
     exit
+  fi
+
+  RELEASE=$(curl -fsSL https://api.github.com/repos/Lidarr/Lidarr/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+  if [[ "${RELEASE}" != "$(cat ~/.lidarr)" ]] || [[ ! -f ~/.lidarr ]]; then
+
+    msg_info "Stopping service"
+    systemctl stop lidarr
+    msg_ok "Service stopped"
+
+    fetch_and_deploy_gh_release "lidarr" "Lidarr/Lidarr" "prebuild" "latest" "/opt/Lidarr" "Lidarr.master*linux-core-x64.tar.gz"
+    chmod 775 /opt/Lidarr
+    
+    msg_info "Starting service"
+    systemctl start lidarr
+    msg_ok "Service started"
+
+    msg_ok "Updated successfully"
+  else
+    msg_ok "No update required. ${APP} is already at ${RELEASE}"
+  fi
+  exit
 }
 
 start

@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
+source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
 # Copyright (c) 2021-2025 tteck
 # Author: MickLesk (Canbiz)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://adventurelog.app/
 
-# App Default Values
 APP="AdventureLog"
-var_tags="traveling"
-var_disk="7"
-var_cpu="2"
-var_ram="2048"
-var_os="debian"
-var_version="12"
-var_unprivileged="1"
+var_tags="${var_tags:-traveling}"
+var_disk="${var_disk:-7}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-2048}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-1}"
 
-# App Output & Base Settings
 header_info "$APP"
-base_settings
-
-# Core
 variables
 color
 catch_errors
@@ -32,43 +27,53 @@ function update_script() {
     msg_error "No ${APP} Installation Found!"
     exit
   fi
-  RELEASE=$(curl -s https://api.github.com/repos/seanmorley15/AdventureLog/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
-  if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
+
+  RELEASE=$(curl -fsSL https://api.github.com/repos/seanmorley15/AdventureLog/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
+  if [[ "${RELEASE}" != "$(cat ~/.adventurelog 2>/dev/null)" ]] || [[ ! -f ~/.adventurelog ]]; then
     msg_info "Stopping Services"
     systemctl stop adventurelog-backend
     systemctl stop adventurelog-frontend
     msg_ok "Services Stopped"
 
-    msg_info "Updating ${APP} to ${RELEASE}"
-    mv /opt/adventurelog/ /opt/adventurelog-backup/
-    wget -qO /opt/v${RELEASE}.zip "https://github.com/seanmorley15/AdventureLog/archive/refs/tags/v${RELEASE}.zip"
-    unzip -q /opt/v${RELEASE}.zip -d /opt/
-    mv /opt/AdventureLog-${RELEASE} /opt/adventurelog
+    msg_info "Backup Old Installation"
+    mkdir -p /opt/adventurelog-backup
+    cp /opt/adventurelog/backend/server/.env /opt/adventurelog-backup/backend/server/.env
+    cp -r /opt/adventurelog/backend/server/media /opt/adventurelog-backup/backend/server/media
+    cp /opt/adventurelog/frontend/.env /opt/adventurelog-backup/frontend/.env
+    msg_ok "Backup done"
 
-    mv /opt/adventurelog-backup/backend/server/.env /opt/adventurelog/backend/server/.env
-    mv /opt/adventurelog-backup/backend/server/media /opt/adventurelog/backend/server/media
+    fetch_and_deploy_gh_release "adventurelog" "seanmorley15/adventurelog"
+    PYTHON_VERSION="3.12" setup_uv
+
+    msg_info "Updating ${APP} to v${RELEASE}"
+    cp /opt/adventurelog-backup/backend/server/.env /opt/adventurelog/backend/server/.env
+    cp -r /opt/adventurelog-backup/backend/server/media /opt/adventurelog/backend/server/media
     cd /opt/adventurelog/backend/server
-    pip install --upgrade pip &>/dev/null
-    pip install -r requirements.txt &>/dev/null
-    python3 manage.py collectstatic --noinput &>/dev/null
-    python3 manage.py migrate &>/dev/null
-
-    mv /opt/adventurelog-backup/frontend/.env /opt/adventurelog/frontend/.env
+    if [[ ! -x .venv/bin/python ]]; then
+      $STD uv venv .venv
+      $STD .venv/bin/python -m ensurepip --upgrade
+    fi
+    $STD .venv/bin/python -m pip install --upgrade pip
+    $STD .venv/bin/python -m pip install -r requirements.txt
+    $STD .venv/bin/python -m manage collectstatic --noinput
+    $STD .venv/bin/python -m manage migrate
+    
+    cp /opt/adventurelog-backup/frontend/.env /opt/adventurelog/frontend/.env
     cd /opt/adventurelog/frontend
-    pnpm install &>/dev/null
-    pnpm run build &>/dev/null
-    echo "${RELEASE}" >/opt/${APP}_version.txt
+    $STD pnpm i
+    $STD pnpm build
     msg_ok "Updated ${APP}"
 
     msg_info "Starting Services"
+    systemctl daemon-reexec
     systemctl start adventurelog-backend
     systemctl start adventurelog-frontend
-    msg_ok "Started Services"
+    msg_ok "Services Started"
 
     msg_info "Cleaning Up"
-    rm -rf /opt/v${RELEASE}.zip
     rm -rf /opt/adventurelog-backup
     msg_ok "Cleaned"
+
     msg_ok "Updated Successfully"
   else
     msg_ok "No update required. ${APP} is already at ${RELEASE}"

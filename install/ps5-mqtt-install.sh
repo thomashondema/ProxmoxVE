@@ -5,7 +5,7 @@
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://github.com/FunkeyFlo/ps5-mqtt/
 
-source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
+source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
 verb_ip6
 catch_errors
@@ -15,42 +15,27 @@ update_os
 
 msg_info "Installing Dependencies"
 $STD apt-get install -y \
-  curl \
-  sudo \
-  mc \
   jq \
-  ca-certificates \
-  gnupg
+  ca-certificates
 msg_ok "Installed Dependencies"
 
-msg_info "Setting up Node.js Repository"
-mkdir -p /etc/apt/keyrings
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" >/etc/apt/sources.list.d/nodesource.list
-msg_ok "Set up Node.js Repository"
-
-msg_info "Installing Node.js"
-$STD apt-get update
-$STD apt-get install -y nodejs
-$STD npm i -g playactor
-msg_ok "Installed Node.js"
-
+NODE_VERSION="22" NODE_MODULE="playactor" setup_nodejs
 
 msg_info "Installing PS5-MQTT"
-RELEASE=$(curl -s https://api.github.com/repos/FunkeyFlo/ps5-mqtt/releases/latest | jq -r '.tag_name')
-wget -P /tmp -q https://github.com/FunkeyFlo/ps5-mqtt/archive/refs/tags/${RELEASE}.tar.gz
+RELEASE=$(curl -fsSL https://api.github.com/repos/FunkeyFlo/ps5-mqtt/releases/latest | jq -r '.tag_name')
+curl -fsSL https://github.com/FunkeyFlo/ps5-mqtt/archive/refs/tags/${RELEASE}.tar.gz -o /tmp/${RELEASE}.tar.gz
 tar zxf /tmp/${RELEASE}.tar.gz -C /opt
 mv /opt/ps5-mqtt-* /opt/ps5-mqtt
 cd /opt/ps5-mqtt/ps5-mqtt/
 $STD npm install
 $STD npm run build
-echo ${RELEASE} > /opt/ps5-mqtt_version.txt
+echo ${RELEASE} >/opt/ps5-mqtt_version.txt
 msg_ok "Installed PS5-MQTT"
 
 msg_info "Creating Service"
 mkdir -p /opt/.config/ps5-mqtt/
 mkdir -p /opt/.config/ps5-mqtt/playactor
-cat <<EOF > /opt/.config/ps5-mqtt/config.json
+cat <<EOF >/opt/.config/ps5-mqtt/config.json
 {
   "mqtt": {
       "host": "",

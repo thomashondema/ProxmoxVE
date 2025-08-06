@@ -2,10 +2,10 @@
 
 # Copyright (c) 2021-2025 tteck
 # Author: tteck
-# License: MIT
-# https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
+# License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
+# Source: https://archivebox.io/
 
-source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
+source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
 verb_ip6
 catch_errors
@@ -15,9 +15,6 @@ update_os
 
 msg_info "Installing Dependencies"
 $STD apt-get install -y \
-  curl \
-  sudo \
-  mc \
   git \
   expect \
   libssl-dev \
@@ -36,20 +33,11 @@ $STD apt-get install -y \
   python3-regex
 msg_ok "Installed Python Dependencies"
 
-msg_info "Setting up Node.js Repository"
-mkdir -p /etc/apt/keyrings
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" >/etc/apt/sources.list.d/nodesource.list
-msg_ok "Set up Node.js Repository"
-
-msg_info "Installing Node.js"
-$STD apt-get update
-$STD apt-get install -y nodejs
-msg_ok "Installed Node.js"
+NODE_VERSION="22" setup_nodejs
 
 msg_info "Installing Playwright"
-$STD pip install playwright 
-$STD playwright install-deps chromium 
+$STD pip install playwright
+$STD playwright install-deps chromium
 msg_ok "Installed Playwright"
 
 msg_info "Installing Chromium and ArchiveBox"
@@ -97,7 +85,7 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl enable -q --now archivebox.service
+systemctl enable -q --now archivebox
 msg_ok "Created Service"
 
 motd_ssh
