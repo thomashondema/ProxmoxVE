@@ -21,8 +21,8 @@
                 "cpu": 2,
                 "ram": 2048,
                 "hdd": 32,
-                "os": "ubuntu",
-                "version": "22.04"
+                "os": "debian",
+                "version": "12"
             }
         }
     ],

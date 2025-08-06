@@ -7,19 +7,17 @@ source <(curl -s https://raw.githubusercontent.com/community-scripts/ProxmoxVE/m
 
 # App Default Values
 APP="Automatic-Ripping-Machine"
-var_tags="media"
-var_cpu="2"
-var_ram="2048"
-var_disk="32"
-var_os="ubuntu"
-var_version="22.04"
-var_unprivileged="0"
+var_tags="${var_tags:-media}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-2048}"
+var_disk="${var_disk:-32}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-12}"
+var_unprivileged="${var_unprivileged:-0}"
 
-# App Output & Base Settings
 header_info "$APP"
 base_settings
 
-# Core
 variables
 color
 catch_errors
