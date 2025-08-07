@@ -16,6 +16,7 @@ msg_info "Installing Dependencies"
 
 
 msg_info "Installing Automatic Ripping Machine"
+msg_info "Warnings about missing contrib repositories can be safely ignored."
 #RELEASE=$(curl -s https://api.github.com/repos/automatic-ripping-machine/automatic-ripping-machine/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
 #cd /opt
 #wget -q "https://github.com/automatic-ripping-machine/automatic-ripping-machine/archive/refs/tags/v${RELEASE}.tar.gz"
@@ -36,6 +37,10 @@ deb-src https://security.debian.org/debian-security bookworm-security main contr
 deb https://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
 deb-src https://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
 EOF
+
+echo "Package: fake-package
+Pin: release n=bookworm-updates, c=contrib
+Pin-Priority: 1" > /etc/apt/preferences.d/fake-contrib
 
 apt update && apt upgrade -y
 
