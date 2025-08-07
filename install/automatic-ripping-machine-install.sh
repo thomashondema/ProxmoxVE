@@ -23,8 +23,20 @@ msg_info "Installing Automatic Ripping Machine"
 #mv "automatic-ripping-machine-${RELEASE}" arm
 
 
-apt install software-properties-common -y
-apt-add-repository contrib
+#apt install software-properties-common -y
+#apt-add-repository contrib
+
+cat <<EOF > /etc/apt/sources.list
+deb https://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+deb-src https://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+
+deb https://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+deb-src https://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+
+deb https://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+deb-src https://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+EOF
+
 apt update && apt upgrade -y
 
 #wget https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh
