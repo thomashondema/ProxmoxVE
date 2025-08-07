@@ -14,19 +14,6 @@ update_os
 
 msg_info "Installing Dependencies"
 
-
-msg_info "Installing Automatic Ripping Machine"
-msg_info "Warnings about missing contrib repositories can be safely ignored."
-#RELEASE=$(curl -s https://api.github.com/repos/automatic-ripping-machine/automatic-ripping-machine/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
-#cd /opt
-#wget -q "https://github.com/automatic-ripping-machine/automatic-ripping-machine/archive/refs/tags/v${RELEASE}.tar.gz"
-#tar xzf "v${RELEASE}.tar.gz"
-#mv "automatic-ripping-machine-${RELEASE}" arm
-
-
-#apt install software-properties-common -y
-#apt-add-repository contrib
-
 cat <<EOF > /etc/apt/sources.list
 deb https://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
 deb-src https://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
@@ -44,16 +31,14 @@ Pin-Priority: 1" > /etc/apt/preferences.d/fake-contrib
 
 apt update && apt upgrade -y
 
-#wget https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh
-#chmod +x DebianInstaller.sh
-#./DebianInstaller.sh
+msg_info "Installing Automatic Ripping Machine"
+msg_info "Warnings about missing contrib repositories can be safely ignored"
 
-#bash -c "$(curl -fsSL https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/scripts/installers/DebianInstaller.sh)"
 
 msg_ok "Installed Automatic Ripping Machine"
 
 msg_info "Creating Service"
-
 
 motd_ssh
 customize
